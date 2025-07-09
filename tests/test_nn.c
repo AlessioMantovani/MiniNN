@@ -1,7 +1,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "nn.h"
+
+#include "nn_internals.h"
 
 void test_init_input_layer() {
     int input_size = 4;
@@ -54,11 +55,13 @@ void test_init_dense_layer() {
 void test_create_and_destroy_net() {
     int num_layers = 3;
     int layer_sizes[3] = {4, 3, 2};
+    double lr = 0.2;
     LayerType layer_types[3] = {INPUT, DENSE, DENSE};
-
-    NeuralNet* net = init_net(num_layers, layer_sizes, layer_types);
+    Activation activations[] = {NONE, RELU, RELU};
+    NeuralNet* net = init_net(num_layers, layer_sizes, layer_types, activations, lr);
     assert(net != NULL);
     assert(net->num_layers == num_layers);
+    assert(net->lr == lr);
 
     for (int i = 0; i < num_layers; i++) {
         assert(net->layers[i] != NULL);

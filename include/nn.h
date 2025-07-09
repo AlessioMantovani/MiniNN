@@ -6,15 +6,26 @@ typedef enum {
     DENSE
 } LayerType;
 
+typedef enum {
+    NONE,
+    RELU,
+    SIGMOID,
+    TANH,
+    LEAKY_RELU,
+} Activation;
+
 // Forward declaration
 typedef struct Layer Layer;
 
 // Function pointer types
 typedef void (*ForwardFunc)(Layer* layer);
 typedef void (*BackwardFunc)(Layer* layer, double* output_gradient, double learning_rate);
+typedef double (*ActivationFunc)(double);
+typedef double (*ActivationDerivativeFunc)(double);
 
 typedef struct Layer {
     LayerType type;
+    Activation activation;
     int input_size;
     int output_size;
     double* input;
@@ -34,37 +45,24 @@ typedef struct Layer {
     // Function pointers
     ForwardFunc forward;
     BackwardFunc backward;
+    ActivationFunc activate;
+    ActivationDerivativeFunc activate_derivative;
 } Layer;
 
 typedef struct {
     int num_layers;
+    double lr;
     Layer** layers;
 } NeuralNet;
 
 // Function declarations
 void nn_init(void);
-void randomize_w(double** w, int layer_size, int previous_layer_size);
-void randomize_b(double* b, int layer_size);
-Layer* init_dense(int layer_size, int previous_layer_size);
-Layer* init_input(int input_size);
-NeuralNet* init_net(int num_layers, int* layer_sizes, LayerType* layer_types);
+NeuralNet* init_net(int num_layers, int* layer_sizes, LayerType* layer_types, Activation* activations, double lr);
 void destroy_net(NeuralNet* nn);
-
-// Layer functions
-void input_forward(Layer* layer);
-void input_backward(Layer* layer, double* output_gradient, double learning_rate);
-void dense_forward(Layer* layer);
-void dense_backward(Layer* layer, double* output_gradient, double learning_rate);
-void setup_layer_functions(Layer* layer);
-
-// Network functions
 void network_forward(NeuralNet* nn, double* input);
-void network_backward(NeuralNet* nn, double* target_output, double learning_rate);
+void network_backward(NeuralNet* nn, double* target_output);
 double calculate_loss(NeuralNet* nn, double* target_output);
 void print_network_weights(NeuralNet* nn);
 
-// Activation functions
-double relu(double x);
-double relu_derivative(double x);
 
 #endif

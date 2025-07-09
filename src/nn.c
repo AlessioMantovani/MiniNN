@@ -68,11 +68,13 @@ Layer* init_input(int input_size) {
 
     layer->forward = NULL;
     layer->backward = NULL;
+    layer->activate = NULL;
+    layer->activate_derivative = NULL;
 
     return layer;
 }
 
-NeuralNet* create_net(int num_layers, int* layer_sizes, LayerType* layer_types) {
+NeuralNet* create_net(int num_layers, int* layer_sizes, LayerType* layer_types, double lr) {
     NeuralNet* nn = (NeuralNet*)malloc(sizeof(NeuralNet));
     if (!nn) {
         printf("Error while creating Neural net\n Exiting...\n");
@@ -80,7 +82,8 @@ NeuralNet* create_net(int num_layers, int* layer_sizes, LayerType* layer_types) 
     }
 
     nn->num_layers = num_layers;
-
+    nn->lr = lr;
+    
     nn->layers = (Layer**)malloc(num_layers * sizeof(Layer*));
     if (!nn->layers) {
         printf("Error allocating layers array\n Exiting...\n");
@@ -124,6 +127,37 @@ double sigmoid_derivative(double x) {
     return s * (1.0 - s);
 }
 
+// Identity function (for input layers or no activation)
+double identity(double x) {
+    return x;
+}
+
+// Identity derivative
+double identity_derivative(double x) {
+    return 1.0;
+}
+
+// Tanh activation function
+double tanh_activation(double x) {
+    return tanh(x);
+}
+
+// Tanh derivative
+double tanh_derivative(double x) {
+    double t = tanh(x);
+    return 1.0 - t * t;
+}
+
+// Leaky ReLU activation function
+double leaky_relu(double x) {
+    return x > 0 ? x : 0.01 * x;
+}
+
+// Leaky ReLU derivative
+double leaky_relu_derivative(double x) {
+    return x > 0 ? 1.0 : 0.01;
+}
+
 
 // Forward pass for input layer
 void input_forward(Layer* layer) {
@@ -133,9 +167,9 @@ void input_forward(Layer* layer) {
     }
 }
 
-// Forward pass for dense layer
+// Forward pass for dense layer - now uses function pointers
 void dense_forward(Layer* layer) {
-    // Compute: output = ReLU(weights * input + bias)
+    // Compute: output = activation(weights * input + bias)
     for (int i = 0; i < layer->output_size; i++) {
         double sum = 0.0;
         
@@ -150,8 +184,13 @@ void dense_forward(Layer* layer) {
         // Store pre-activation value for backward pass
         layer->pre_activation[i] = sum;
         
-        // Apply ReLU activation
-        layer->output[i] = sigmoid(sum);
+        // Apply activation function using function pointer
+        if (layer->activate) {
+            layer->output[i] = layer->activate(sum);
+        } else {
+            // Default to identity if no activation is set
+            layer->output[i] = sum;
+        }
     }
 }
 
@@ -163,7 +202,7 @@ void input_backward(Layer* layer, double* output_gradient, double learning_rate)
     }
 }
 
-// Backward pass for dense layer
+// Backward pass for dense layer - now uses function pointers
 void dense_backward(Layer* layer, double* output_gradient, double learning_rate) {
     // Initialize input gradient to zero
     for (int i = 0; i < layer->input_size; i++) {
@@ -172,8 +211,12 @@ void dense_backward(Layer* layer, double* output_gradient, double learning_rate)
     
     // Compute gradients and update parameters
     for (int i = 0; i < layer->output_size; i++) {
-        // Apply ReLU derivative to output gradient
-        double activation_gradient = sigmoid_derivative(layer->pre_activation[i]);
+        // Apply activation derivative using function pointer
+        double activation_gradient = 1.0; // Default to 1 if no derivative function
+        if (layer->activate_derivative) {
+            activation_gradient = layer->activate_derivative(layer->pre_activation[i]);
+        }
+        
         double delta = output_gradient[i] * activation_gradient;
         
         // Update bias
@@ -190,17 +233,51 @@ void dense_backward(Layer* layer, double* output_gradient, double learning_rate)
     }
 }
 
+// Function to set up activation function pointers
+void setup_activation_functions(Layer* layer, Activation activation) {
+    switch (activation) {
+        case RELU:
+            layer->activate = relu;
+            layer->activate_derivative = relu_derivative;
+            break;
+            
+        case SIGMOID:
+            layer->activate = sigmoid;
+            layer->activate_derivative = sigmoid_derivative;
+            break;
+
+        case TANH:
+            layer->activate = tanh;
+            layer->activate_derivative = tanh_derivative;
+            break;
+
+        case LEAKY_RELU:
+            layer->activate = leaky_relu;
+            layer->activate_derivative = leaky_relu_derivative;
+            break;
+
+        case NONE:
+        default:
+            layer->activate = identity;
+            layer->activate_derivative = identity_derivative;
+            break;
+    }
+}
+
 // Function to set up layer function pointers
-void setup_layer_functions(Layer* layer) {
+void setup_layer_functions(Layer* layer, Activation activation) {
     switch (layer->type) {
         case INPUT:
             layer->forward = input_forward;
             layer->backward = input_backward;
+            layer->activate = identity;
+            layer->activate_derivative = identity_derivative;
             break;
             
         case DENSE:
             layer->forward = dense_forward;
             layer->backward = dense_backward;
+            setup_activation_functions(layer, activation);
             break;
             
         default:
@@ -235,7 +312,7 @@ void network_forward(NeuralNet* nn, double* input) {
 }
 
 // Backward pass for entire network with proper gradient propagation
-void network_backward(NeuralNet* nn, double* target_output, double learning_rate) {
+void network_backward(NeuralNet* nn, double* target_output) {
     // Calculate output error (MSE derivative: 2 * (output - target))
     Layer* output_layer = nn->layers[nn->num_layers - 1];
     
@@ -250,7 +327,7 @@ void network_backward(NeuralNet* nn, double* target_output, double learning_rate
         
         if (layer->backward) {
             // Pass the output gradient to the layer's backward function
-            layer->backward(layer, layer->output_gradient, learning_rate);
+            layer->backward(layer, layer->output_gradient, nn->lr);
         }
         
         // Propagate gradients to previous layer
@@ -304,13 +381,12 @@ void print_network_weights(NeuralNet* nn) {
     printf("======================\n");
 }
 
-NeuralNet* init_net(int num_layers, int* layer_sizes, LayerType* layer_types) {
-    NeuralNet* nn = create_net(num_layers, layer_sizes, layer_types);
-    
+NeuralNet* init_net(int num_layers, int* layer_sizes, LayerType* layer_types, Activation* activations, double lr) {
+    NeuralNet* nn = create_net(num_layers, layer_sizes, layer_types, lr);
     // Set up function pointers and allocate gradient memory for each layer
     for (int i = 0; i < num_layers; i++) {
         Layer* layer = nn->layers[i];
-        
+        layer->activation = activations[i];
         // Allocate gradient memory
         layer->input_gradient = (double*)calloc(layer->input_size, sizeof(double));
         layer->output_gradient = (double*)calloc(layer->output_size, sizeof(double));
@@ -322,8 +398,8 @@ NeuralNet* init_net(int num_layers, int* layer_sizes, LayerType* layer_types) {
             layer->pre_activation = NULL;
         }
         
-        // Set up function pointers
-        setup_layer_functions(layer);
+        // Set up function pointers (including activation functions)
+        setup_layer_functions(layer, activations[i]);
     }
     
     return nn;

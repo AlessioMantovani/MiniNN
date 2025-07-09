@@ -20,8 +20,9 @@ int main(void) {
     
     int layer_sizes[] = {2, 3, 1};
     LayerType layer_types[] = {INPUT, DENSE, DENSE};
-    
-    NeuralNet* nn = init_net(3, layer_sizes, layer_types);
+    Activation activations[] = {NONE, SIGMOID, SIGMOID};
+
+    NeuralNet* nn = init_net(3, layer_sizes, layer_types, activations, 0.2);
     
     for (int epoch = 0; epoch < 100000; epoch++) {
         double total_loss = 0.0;
@@ -30,7 +31,7 @@ int main(void) {
             network_forward(nn, inputs[i]);
             double loss = calculate_loss(nn, targets[i]);
             total_loss += loss;
-            network_backward(nn, targets[i], 0.5);
+            network_backward(nn, targets[i]);
         }
 
         if (epoch % 5000 == 0) {
