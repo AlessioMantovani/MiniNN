@@ -49,8 +49,11 @@ int main(void) {
     
     // Create network: 2 inputs -> 3 hidden -> 1 output
     int layer_sizes[] = {2, 3, 1};
+    double lr = 0.1;
     LayerType layer_types[] = {INPUT, DENSE, DENSE};
-    NeuralNet* nn = init_net(3, layer_sizes, layer_types);
+    Activation activations[] = {NONE, SIGMOID, SIGMOID};
+
+    NeuralNet* nn = init_net(3, layer_sizes, layer_types, activations, lr);
     
     // Train the network
     for (int epoch = 0; epoch < 10000; epoch++) {
