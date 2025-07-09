@@ -19,10 +19,11 @@ int main(void) {
     };
     
     int layer_sizes[] = {2, 3, 1};
+    double lr = 0.1;
     LayerType layer_types[] = {INPUT, DENSE, DENSE};
     Activation activations[] = {NONE, SIGMOID, SIGMOID};
 
-    NeuralNet* nn = init_net(3, layer_sizes, layer_types, activations, 0.2);
+    NeuralNet* nn = init_net(3, layer_sizes, layer_types, activations, lr);
     
     for (int epoch = 0; epoch < 100000; epoch++) {
         double total_loss = 0.0;
