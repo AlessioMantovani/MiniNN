@@ -18,10 +18,10 @@ int main(void) {
         {0.0}
     };
     
-    int layer_sizes[] = {2, 3, 1};
-    double lr = 0.1;
-    LayerType layer_types[] = {INPUT, DENSE, DENSE};
-    Activation activations[] = {NONE, SIGMOID, SIGMOID};
+    int layer_sizes[] = {2, 10, 10, 1};
+    double lr = 0.01;
+    LayerType layer_types[] = {INPUT, DENSE, DENSE, DENSE};
+    Activation activations[] = {NONE, SIGMOID, SIGMOID, SIGMOID};
 
     NeuralNet* nn = init_net(3, layer_sizes, layer_types, activations, lr);
     

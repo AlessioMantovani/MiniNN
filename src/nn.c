@@ -107,12 +107,10 @@ NeuralNet* create_net(int num_layers, int* layer_sizes, LayerType* layer_types, 
     return nn;
 }
 
-// ReLU activation function
 double relu(double x) {
     return x > 0 ? x : 0;
 }
 
-// ReLU derivative
 double relu_derivative(double x) {
     return x > 0 ? 1 : 0;
 }
@@ -121,45 +119,36 @@ double sigmoid(double x) {
     return 1.0 / (1.0 + exp(-x));
 }
 
-// Sigmoid derivative
 double sigmoid_derivative(double x) {
     double s = sigmoid(x);
     return s * (1.0 - s);
 }
 
-// Identity function (for input layers or no activation)
 double identity(double x) {
     return x;
 }
 
-// Identity derivative
 double identity_derivative(double x) {
     return 1.0;
 }
 
-// Tanh activation function
 double tanh_activation(double x) {
     return tanh(x);
 }
 
-// Tanh derivative
 double tanh_derivative(double x) {
     double t = tanh(x);
     return 1.0 - t * t;
 }
 
-// Leaky ReLU activation function
 double leaky_relu(double x) {
     return x > 0 ? x : 0.01 * x;
 }
 
-// Leaky ReLU derivative
 double leaky_relu_derivative(double x) {
     return x > 0 ? 1.0 : 0.01;
 }
 
-
-// Forward pass for input layer
 void input_forward(Layer* layer) {
     // Input layer just copies input to output
     for (int i = 0; i < layer->input_size; i++) {
@@ -167,7 +156,6 @@ void input_forward(Layer* layer) {
     }
 }
 
-// Forward pass for dense layer - now uses function pointers
 void dense_forward(Layer* layer) {
     // Compute: output = activation(weights * input + bias)
     for (int i = 0; i < layer->output_size; i++) {
@@ -194,7 +182,6 @@ void dense_forward(Layer* layer) {
     }
 }
 
-// Backward pass for input layer
 void input_backward(Layer* layer, double* output_gradient, double learning_rate) {
     // Input layer just passes gradients through
     for (int i = 0; i < layer->input_size; i++) {
@@ -202,7 +189,6 @@ void input_backward(Layer* layer, double* output_gradient, double learning_rate)
     }
 }
 
-// Backward pass for dense layer - now uses function pointers
 void dense_backward(Layer* layer, double* output_gradient, double learning_rate) {
     // Initialize input gradient to zero
     for (int i = 0; i < layer->input_size; i++) {
@@ -233,7 +219,6 @@ void dense_backward(Layer* layer, double* output_gradient, double learning_rate)
     }
 }
 
-// Function to set up activation function pointers
 void setup_activation_functions(Layer* layer, Activation activation) {
     switch (activation) {
         case RELU:
@@ -264,7 +249,6 @@ void setup_activation_functions(Layer* layer, Activation activation) {
     }
 }
 
-// Function to set up layer function pointers
 void setup_layer_functions(Layer* layer, Activation activation) {
     switch (layer->type) {
         case INPUT:
@@ -286,7 +270,6 @@ void setup_layer_functions(Layer* layer, Activation activation) {
     }
 }
 
-// Forward pass for entire network
 void network_forward(NeuralNet* nn, double* input) {
     // Set input to the first layer
     for (int i = 0; i < nn->layers[0]->input_size; i++) {
@@ -311,7 +294,6 @@ void network_forward(NeuralNet* nn, double* input) {
     }
 }
 
-// Backward pass for entire network with proper gradient propagation
 void network_backward(NeuralNet* nn, double* target_output) {
     // Calculate output error (MSE derivative: 2 * (output - target))
     Layer* output_layer = nn->layers[nn->num_layers - 1];
@@ -341,7 +323,6 @@ void network_backward(NeuralNet* nn, double* target_output) {
     }
 }
 
-// Function to calculate network loss (Mean Squared Error)
 double calculate_loss(NeuralNet* nn, double* target_output) {
     Layer* output_layer = nn->layers[nn->num_layers - 1];
     double loss = 0.0;
@@ -354,7 +335,6 @@ double calculate_loss(NeuralNet* nn, double* target_output) {
     return loss / output_layer->output_size;
 }
 
-// Helper function to print network weights (for debugging)
 void print_network_weights(NeuralNet* nn) {
     printf("=== Network Weights ===\n");
     for (int i = 1; i < nn->num_layers; i++) {
@@ -405,7 +385,6 @@ NeuralNet* init_net(int num_layers, int* layer_sizes, LayerType* layer_types, Ac
     return nn;
 }
 
-// Updated destroy_net function to free gradient memory
 void destroy_net(NeuralNet* nn) {
     if (!nn) return;
     

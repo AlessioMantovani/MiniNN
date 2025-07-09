@@ -14,10 +14,8 @@ typedef enum {
     LEAKY_RELU,
 } Activation;
 
-// Forward declaration
 typedef struct Layer Layer;
 
-// Function pointer types
 typedef void (*ForwardFunc)(Layer* layer);
 typedef void (*BackwardFunc)(Layer* layer, double* output_gradient, double learning_rate);
 typedef double (*ActivationFunc)(double);
@@ -55,7 +53,6 @@ typedef struct {
     Layer** layers;
 } NeuralNet;
 
-// Function declarations
 void nn_init(void);
 NeuralNet* init_net(int num_layers, int* layer_sizes, LayerType* layer_types, Activation* activations, double lr);
 void destroy_net(NeuralNet* nn);
@@ -63,6 +60,5 @@ void network_forward(NeuralNet* nn, double* input);
 void network_backward(NeuralNet* nn, double* target_output);
 double calculate_loss(NeuralNet* nn, double* target_output);
 void print_network_weights(NeuralNet* nn);
-
 
 #endif
