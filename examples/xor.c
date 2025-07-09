@@ -23,7 +23,7 @@ int main(void) {
     
     NeuralNet* nn = init_net(3, layer_sizes, layer_types);
     
-    for (int epoch = 0; epoch < 10000; epoch++) {
+    for (int epoch = 0; epoch < 100000; epoch++) {
         double total_loss = 0.0;
 
         for (int i = 0; i < 4; i++) {
@@ -33,7 +33,7 @@ int main(void) {
             network_backward(nn, targets[i], 0.5);
         }
 
-        if (epoch % 1000 == 0) {
+        if (epoch % 5000 == 0) {
             printf("Epoch %d, Loss: %.6f\n", epoch, total_loss / 4.0);
         }
     }
